@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [#5] Implemented dedicated College Administrator endpoints (`/api/admin/overview`, `/api/admin/departments`, `/api/admin/users`, `/api/admin/users/{id}/status`) for institutional KPIs, department provisioning, and account lifecycle management (closes #5).
+- [#5] Implemented Department Student Management endpoints (`/api/students`) with search, creation, and Subject Membership enrollment/unenrollment audit lifecycle tracking.
+- [#5] Enhanced Subject Management endpoints (`/api/subjects`) with creation, editing, and student enrollment roster management.
+- [#5] Expanded database models in `app/models.py` covering all 14 SRS Section 3 entities (College, Department, Subject, Document, DocumentChunk, User, SubjectMembership, Conversation, ConversationMessage, Feedback, AIProviderCredential, UsageRecord, BillingSnapshot, BattleUsageCounter).
+- [#5] Enforced strict environment-driven `DATABASE_URL` validation in `app/config.py` halting server execution if missing from `.env` or system environment, with documented SQLite and online PostgreSQL/Supabase configuration.
+
+### Added
 - [#3] Implemented Grounded Academic Q&A RAG Engine with document chunk retrieval, verified citations, Gemini API integration, and automatic Insufficient Evidence fallback (closes #3).
 - [#3] Implemented 10-Question Solo Quiz Battle Engine (`/api/quiz/start`, `/api/quiz/submit`) with timed countdown, instant scoring, question reviews with citations, and daily battle limit tracking.
 - [#1] Implemented Subject-Based Access Control (SBAC) evaluator gating cross-subject retrieval with HTTP 403 (closes #1).
