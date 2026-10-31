@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [#7] Implemented Department Edit endpoint (`PUT /api/admin/departments/{id}`) allowing College Administrators to update department code and name (closes #7).
+- [#7] Upgraded Department Provisioning endpoint (`POST /api/admin/departments`) to require faculty email and password, atomically creating both the Department and its primary `department_user` (Faculty) account.
+- [#7] Added `lead_faculty_email` to `DepartmentOut` schema and department directory listings.
+
+### Added
 - [#5] Implemented dedicated College Administrator endpoints (`/api/admin/overview`, `/api/admin/departments`, `/api/admin/users`, `/api/admin/users/{id}/status`) for institutional KPIs, department provisioning, and account lifecycle management (closes #5).
 - [#5] Implemented Department Student Management endpoints (`/api/students`) with search, creation, and Subject Membership enrollment/unenrollment audit lifecycle tracking.
 - [#5] Enhanced Subject Management endpoints (`/api/subjects`) with creation, editing, and student enrollment roster management.

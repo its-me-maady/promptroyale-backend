@@ -37,23 +37,51 @@ async def test_admin_endpoints():
         assert "faculty_count" in data
         assert "billing_snapshot" in data
 
-        # 3. Create Department
+        # 3. Create Department with faculty credentials
+        unique_dept_code = f"IT_{uuid.uuid4().hex[:4].upper()}"
+        faculty_email = f"faculty_{uuid.uuid4().hex[:4]}@vaigai.edu"
         res_create_dept = await client.post(
             "/api/admin/departments",
             headers=admin_headers,
-            json={"name": "Information Technology", "code": "IT"}
+            json={
+                "name": "Information Technology",
+                "code": unique_dept_code,
+                "faculty_name": "Dr. S. Kumar",
+                "faculty_email": faculty_email,
+                "faculty_password": "Vaigai@123"
+            }
         )
         assert res_create_dept.status_code == 200
-        assert res_create_dept.json()["code"] == "IT"
+        dept_data = res_create_dept.json()
+        assert dept_data["code"] == unique_dept_code
+        assert dept_data["lead_faculty_email"] == faculty_email
+        dept_id = dept_data["id"]
 
-        # 4. List Departments
+        # 4. Verify newly created faculty can log in
+        new_faculty_login = await client.post(
+            "/api/auth/login",
+            json={"email": faculty_email, "password": "Vaigai@123"}
+        )
+        assert new_faculty_login.status_code == 200
+        assert new_faculty_login.json()["user"]["role"] == "department_user"
+
+        # 5. Edit Department via PUT /api/admin/departments/{id}
+        res_update_dept = await client.put(
+            f"/api/admin/departments/{dept_id}",
+            headers=admin_headers,
+            json={"name": "Information Technology & Systems"}
+        )
+        assert res_update_dept.status_code == 200
+        assert res_update_dept.json()["name"] == "Information Technology & Systems"
+
+        # 6. List Departments
         res_depts = await client.get("/api/admin/departments", headers=admin_headers)
         assert res_depts.status_code == 200
         codes = [d["code"] for d in res_depts.json()]
         assert "CSE" in codes
-        assert "IT" in codes
+        assert unique_dept_code in codes
 
-        # 5. Non-admin forbidden
+        # 7. Non-admin forbidden
         faculty_login = await client.post(
             "/api/auth/login",
             json={"email": "faculty.cse@vaigai.edu", "password": "Vaigai@123"}

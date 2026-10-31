@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import CurrentUser, get_current_user
+from app.core.security import CurrentUser, get_current_user, get_password_hash
 from app.database import get_db
 from app.models import BillingSnapshot, College, Department, Subject, User
 from app.schemas import (
@@ -12,6 +12,7 @@ from app.schemas import (
     BillingSnapshotOut,
     DepartmentCreate,
     DepartmentOut,
+    DepartmentUpdate,
     UserAdminOut,
     UserStatusUpdate,
 )
@@ -105,13 +106,20 @@ async def list_departments(
     for d in depts:
         s_count = await db.scalar(select(func.count(Subject.id)).where(Subject.department_id == d.id)) or 0
         f_count = await db.scalar(select(func.count(User.id)).where(User.department_id == d.id, User.role == "department_user")) or 0
+        lead_faculty = await db.scalar(
+            select(User.email).where(
+                User.department_id == d.id,
+                User.role == "department_user"
+            )
+        )
         out.append(DepartmentOut(
             id=d.id,
             college_id=d.college_id,
             name=d.name,
             code=d.code,
             subject_count=s_count,
-            faculty_count=f_count
+            faculty_count=f_count,
+            lead_faculty_email=lead_faculty
         ))
     return out
 
@@ -124,12 +132,34 @@ async def create_department(
 ):
     enforce_admin(current_user)
 
+    # Check if faculty email is already registered
+    existing = await db.scalar(select(User).where(User.email == payload.faculty_email))
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A user with email {payload.faculty_email} already exists."
+        )
+
     dept = Department(
         college_id=current_user.college_id,
-        name=payload.name,
+        name=payload.name.strip(),
         code=payload.code.upper().strip()
     )
     db.add(dept)
+    await db.flush()
+
+    # Provision initial faculty account
+    faculty_user = User(
+        college_id=current_user.college_id,
+        department_id=dept.id,
+        email=payload.faculty_email,
+        name=payload.faculty_name.strip() if payload.faculty_name else f"{dept.code} Faculty",
+        hashed_password=get_password_hash(payload.faculty_password),
+        role="department_user",
+        status="active",
+        is_active=True
+    )
+    db.add(faculty_user)
     await db.commit()
     await db.refresh(dept)
 
@@ -139,7 +169,49 @@ async def create_department(
         name=dept.name,
         code=dept.code,
         subject_count=0,
-        faculty_count=0
+        faculty_count=1,
+        lead_faculty_email=payload.faculty_email
+    )
+
+
+@router.put("/departments/{department_id}", response_model=DepartmentOut)
+async def update_department(
+    department_id: int,
+    payload: DepartmentUpdate,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    enforce_admin(current_user)
+
+    dept = await db.get(Department, department_id)
+    if not dept or dept.college_id != current_user.college_id:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    if payload.code:
+        dept.code = payload.code.upper().strip()
+    if payload.name:
+        dept.name = payload.name.strip()
+
+    await db.commit()
+    await db.refresh(dept)
+
+    s_count = await db.scalar(select(func.count(Subject.id)).where(Subject.department_id == dept.id)) or 0
+    f_count = await db.scalar(select(func.count(User.id)).where(User.department_id == dept.id, User.role == "department_user")) or 0
+    lead_faculty = await db.scalar(
+        select(User.email).where(
+            User.department_id == dept.id,
+            User.role == "department_user"
+        )
+    )
+
+    return DepartmentOut(
+        id=dept.id,
+        college_id=dept.college_id,
+        name=dept.name,
+        code=dept.code,
+        subject_count=s_count,
+        faculty_count=f_count,
+        lead_faculty_email=lead_faculty
     )
 
 

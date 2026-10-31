@@ -99,6 +99,14 @@ class SubjectStudentsOut(BaseModel):
 class DepartmentCreate(BaseModel):
     name: str
     code: str
+    faculty_name: str | None = None
+    faculty_email: EmailStr
+    faculty_password: str
+
+
+class DepartmentUpdate(BaseModel):
+    name: str | None = None
+    code: str | None = None
 
 
 class DepartmentOut(BaseModel):
@@ -110,6 +118,7 @@ class DepartmentOut(BaseModel):
     code: str
     subject_count: int = 0
     faculty_count: int = 0
+    lead_faculty_email: str | None = None
 
 
 class BillingSnapshotOut(BaseModel):
