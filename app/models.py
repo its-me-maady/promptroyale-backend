@@ -163,6 +163,7 @@ class AIProviderCredential(Base):
     provider = Column(String(50), default="gemini")
     encrypted_key = Column(Text, nullable=False)
     status = Column(String(50), default="active")  # 'active', 'revoked' (SRS FR-7)
+    is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     student = relationship("User", back_populates="credentials")
