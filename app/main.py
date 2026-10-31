@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
 from app.routers import admin, auth, chat, credentials, quiz, students, subjects
-from app.seed import seed_vaigai_college
+from app.seed import seed_academic_subjects, seed_vaigai_college
 
 
 @asynccontextmanager
@@ -13,6 +13,7 @@ async def lifespan(app: FastAPI):
     # Initialize database tables and seed Vaigai College data automatically
     await init_db()
     await seed_vaigai_college()
+    await seed_academic_subjects()
     yield
 
 app = FastAPI(
