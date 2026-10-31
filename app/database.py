@@ -1,6 +1,7 @@
 import os
 
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
@@ -36,5 +37,6 @@ async def init_db():
         if "sqlite" in settings.DATABASE_URL:
             try:
                 await conn.execute(text("ALTER TABLE ai_provider_credentials ADD COLUMN is_default BOOLEAN DEFAULT 0"))
-            except Exception:
+            except OperationalError:
+                # Column already present in existing SQLite database
                 pass

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [#13] Enriched academic curriculum seeding (`seed_academic_subjects`) across CSE, ECE, MECH, and IT departments with vetted lecture materials and retrieval chunks (Operating Systems, Computer Networks, AI & Machine Learning, Digital Electronics, Thermodynamics, Cloud Architectures) (closes #13).
 - [#11] Implemented student BYOK multi-provider credential management endpoints (`GET`, `POST`, `DELETE /api/students/credentials`) supporting Gemini, OpenAI, Anthropic, DeepSeek, and OpenRouter with encryption at rest, masked key display, and revocation control (closes #11).
 - [#9] Added dedicated staff management endpoints (`GET /api/admin/staff`, `POST /api/admin/staff`, `DELETE /api/admin/staff/{id}`) for College Administrators (closes #9).
 - [#9] Supported multi-select staff member assignment in department creation (`POST /api/admin/departments`) and department editing (`PUT /api/admin/departments/{id}`).

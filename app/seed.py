@@ -195,3 +195,177 @@ async def seed_vaigai_college():
 
         await session.commit()
         print("--> Vaigai College successfully seeded with students, subjects, billing, and vetted syllabus!")
+
+
+ACADEMIC_SUBJECTS_CATALOG = [
+    {
+        "dept_code": "CSE",
+        "dept_name": "Computer Science & Engineering",
+        "code": "CS302",
+        "name": "Operating Systems",
+        "description": "Process management, thread synchronization, memory virtualization, demand paging, and file systems.",
+        "doc_title": "Lecture 4 — Virtual Memory & Paging Mechanisms",
+        "chunks": [
+            {
+                "section": "Virtual Memory and Page Tables",
+                "content": "Virtual memory abstracts physical RAM into contiguous address spaces per process. The Memory Management Unit (MMU) translates virtual addresses to physical frame numbers using page tables. Multilevel page tables reduce memory overhead for sparse address spaces."
+            },
+            {
+                "section": "Page Replacement Algorithms",
+                "content": "When page faults occur under high memory pressure, page replacement policies like Least Recently Used (LRU) and Clock algorithm determine which victim frames to evict to disk swap space."
+            }
+        ]
+    },
+    {
+        "dept_code": "CSE",
+        "dept_name": "Computer Science & Engineering",
+        "code": "CS401",
+        "name": "Computer Networks",
+        "description": "Network layered architectures, packet switching, transport layer flow control, IP addressing, and routing algorithms.",
+        "doc_title": "Lecture 2 — Transport Layer & TCP Congestion Control",
+        "chunks": [
+            {
+                "section": "TCP Three-Way Handshake",
+                "content": "Transmission Control Protocol (TCP) establishes reliable connections via SYN, SYN-ACK, and ACK sequence exchanges, guaranteeing in-order packet delivery."
+            },
+            {
+                "section": "Congestion Control Mechanisms",
+                "content": "TCP congestion avoidance employs Slow Start, Additive Increase Multiplicative Decrease (AIMD), and fast retransmit to prevent bufferbloat across network routers."
+            }
+        ]
+    },
+    {
+        "dept_code": "CSE",
+        "dept_name": "Computer Science & Engineering",
+        "code": "CS405",
+        "name": "Artificial Intelligence & Machine Learning",
+        "description": "Search state spaces, heuristic reasoning, neural network architectures, loss functions, and transformer attention mechanisms.",
+        "doc_title": "Lecture 5 — Transformer Self-Attention Architecture",
+        "chunks": [
+            {
+                "section": "Scaled Dot-Product Attention",
+                "content": "The transformer self-attention mechanism computes attention weights as Softmax((Q * K^T) / sqrt(d_k)) * V, allowing tokens to dynamically attend to contextual dependencies across arbitrary sequence lengths."
+            },
+            {
+                "section": "Multi-Head Attention",
+                "content": "Multi-head attention projects Queries, Keys, and Values into multiple lower-dimensional subspaces, enabling the model to jointly attend to information from different representation positions."
+            }
+        ]
+    },
+    {
+        "dept_code": "ECE",
+        "dept_name": "Electronics and Communication",
+        "code": "EC201",
+        "name": "Digital Electronics & Logic Design",
+        "description": "Boolean algebra, combinational logic, sequential circuits, flip-flops, state machines, and FPGA basics.",
+        "doc_title": "Lecture 1 — Combinational Logic & Karnaugh Maps",
+        "chunks": [
+            {
+                "section": "K-Map Minimization",
+                "content": "Karnaugh maps provide a graphical technique for minimizing Boolean algebraic expressions into optimal Sum-of-Products (SOP) forms, eliminating logic hazards and reducing gate count."
+            },
+            {
+                "section": "Sequential Storage Elements",
+                "content": "Flip-flops (D, JK, T) act as bistable multivibrators that store single binary bits synchronized to clock edge transitions."
+            }
+        ]
+    },
+    {
+        "dept_code": "MECH",
+        "dept_name": "Mechanical & Aerospace Engineering",
+        "code": "ME201",
+        "name": "Engineering Thermodynamics",
+        "description": "Laws of thermodynamics, reversible cycles, entropy generation, pure substance state equations, and gas power cycles.",
+        "doc_title": "Lecture 3 — Second Law of Thermodynamics & Entropy",
+        "chunks": [
+            {
+                "section": "The Second Law of Thermodynamics",
+                "content": "The Clausius and Kelvin-Planck statements dictate that heat cannot spontaneously flow from cold to hot bodies without external work. The Carnot cycle establishes the theoretical upper limit on thermal efficiency."
+            },
+            {
+                "section": "Entropy and Irreversibility",
+                "content": "Entropy measures unavailable energy and molecular disorder in isolated thermodynamic systems, always increasing during spontaneous real-world processes (dS >= 0)."
+            }
+        ]
+    },
+    {
+        "dept_code": "IT",
+        "dept_name": "Information Technology",
+        "code": "IT201",
+        "name": "Web Development & Cloud Architectures",
+        "description": "Client-server models, RESTful APIs, distributed containerization, microservice communication, and serverless compute.",
+        "doc_title": "Lecture 2 — Microservices & RESTful API Principles",
+        "chunks": [
+            {
+                "section": "REST Architectural Constraints",
+                "content": "Representational State Transfer enforces stateless interactions, uniform resource identifiers (URIs), standard HTTP verbs (GET, POST, PUT, DELETE), and JSON payload representations."
+            },
+            {
+                "section": "Container Orchestration",
+                "content": "Docker containers bundle applications with dependencies for reproducible deployment, managed by container engines for resilient horizontal scaling."
+            }
+        ]
+    }
+]
+
+
+async def seed_academic_subjects():
+    async with AsyncSessionLocal() as session:
+        res = await session.execute(select(College).where(College.domain == "vaigai.edu"))
+        college = res.scalar_one_or_none()
+        if not college:
+            return
+
+        for item in ACADEMIC_SUBJECTS_CATALOG:
+            # 1. Ensure department exists
+            dept_res = await session.execute(
+                select(Department).where(Department.code == item["dept_code"], Department.college_id == college.id)
+            )
+            dept = dept_res.scalars().first()
+            if not dept:
+                dept = Department(
+                    college_id=college.id,
+                    code=item["dept_code"],
+                    name=item["dept_name"]
+                )
+                session.add(dept)
+                await session.flush()
+
+            # 2. Check if subject already exists
+            sub_res = await session.execute(
+                select(Subject).where(Subject.code == item["code"], Subject.department_id == dept.id)
+            )
+            sub = sub_res.scalars().first()
+            if not sub:
+                sub = Subject(
+                    department_id=dept.id,
+                    code=item["code"],
+                    name=item["name"],
+                    description=item["description"]
+                )
+                session.add(sub)
+                await session.flush()
+
+                # Add lecture document
+                doc = Document(
+                    subject_id=sub.id,
+                    title=item["doc_title"],
+                    file_type="markdown",
+                    processing_status="available"
+                )
+                session.add(doc)
+                await session.flush()
+
+                # Add chunks
+                for idx, ch in enumerate(item["chunks"], start=1):
+                    chunk = DocumentChunk(
+                        document_id=doc.id,
+                        subject_id=sub.id,
+                        chunk_index=idx,
+                        section_title=ch["section"],
+                        content=ch["content"]
+                    )
+                    session.add(chunk)
+
+        await session.commit()
+        print("--> Academic subjects and curriculum materials successfully seeded across departments!")
