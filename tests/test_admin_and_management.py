@@ -160,3 +160,102 @@ async def test_student_and_subject_management():
         assert res_sub_students.status_code == 200
         enrolled_ids = [s["id"] for s in res_sub_students.json()["enrolled"]]
         assert student_id not in enrolled_ids
+
+        # 6. Delete Student by Department Staff
+        res_del_stu = await client.delete(
+            f"/api/students/{student_id}",
+            headers=headers
+        )
+        assert res_del_stu.status_code == 200
+
+        # Verify student no longer in list
+        res_list_after_del = await client.get("/api/students", headers=headers)
+        assert res_list_after_del.status_code == 200
+        emails_after = [s["email"] for s in res_list_after_del.json()]
+        assert unique_email not in emails_after
+
+
+@pytest.mark.asyncio
+async def test_staff_management_and_department_multiselect():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Login as Admin
+        admin_login = await client.post(
+            "/api/auth/login",
+            json={"email": "admin@vaigai.edu", "password": "Vaigai@123"}
+        )
+        admin_token = admin_login.json()["access_token"]
+        headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 1. Admin creates staff member 1
+        email1 = f"staff1_{uuid.uuid4().hex[:4]}@vaigai.edu"
+        res_staff1 = await client.post(
+            "/api/admin/staff",
+            headers=headers,
+            json={
+                "name": "Dr. Staff One",
+                "email": email1,
+                "password": "Vaigai@123"
+            }
+        )
+        assert res_staff1.status_code == 200
+        staff1_id = res_staff1.json()["id"]
+
+        # 2. Admin creates staff member 2
+        email2 = f"staff2_{uuid.uuid4().hex[:4]}@vaigai.edu"
+        res_staff2 = await client.post(
+            "/api/admin/staff",
+            headers=headers,
+            json={
+                "name": "Dr. Staff Two",
+                "email": email2,
+                "password": "Vaigai@123"
+            }
+        )
+        assert res_staff2.status_code == 200
+        staff2_id = res_staff2.json()["id"]
+
+        # 3. Create Department with multi-select staff assignment
+        dept_code = f"BIO_{uuid.uuid4().hex[:4].upper()}"
+        res_dept = await client.post(
+            "/api/admin/departments",
+            headers=headers,
+            json={
+                "name": "Biomedical Engineering",
+                "code": dept_code,
+                "staff_ids": [staff1_id, staff2_id]
+            }
+        )
+        assert res_dept.status_code == 200
+        dept_data = res_dept.json()
+        dept_id = dept_data["id"]
+        assert dept_data["faculty_count"] == 2
+        assert staff1_id in dept_data["assigned_staff_ids"]
+        assert staff2_id in dept_data["assigned_staff_ids"]
+
+        # 4. Update Department to only keep staff1
+        res_update = await client.put(
+            f"/api/admin/departments/{dept_id}",
+            headers=headers,
+            json={
+                "staff_ids": [staff1_id]
+            }
+        )
+        assert res_update.status_code == 200
+        updated_dept = res_update.json()
+        assert updated_dept["faculty_count"] == 1
+        assert updated_dept["assigned_staff_ids"] == [staff1_id]
+
+        # 5. Delete staff2 via DELETE /api/admin/staff/{id}
+        res_del_staff = await client.delete(
+            f"/api/admin/staff/{staff2_id}",
+            headers=headers
+        )
+        assert res_del_staff.status_code == 200
+
+        # Verify staff2 is removed from staff list
+        res_staff_list = await client.get("/api/admin/staff", headers=headers)
+        assert res_staff_list.status_code == 200
+        ids = [s["id"] for s in res_staff_list.json()]
+        assert staff2_id not in ids
+        assert staff1_id in ids

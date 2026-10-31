@@ -96,17 +96,26 @@ class SubjectStudentsOut(BaseModel):
 
 
 # Admin Governance Schemas
+class StaffCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    department_id: int | None = None
+
+
 class DepartmentCreate(BaseModel):
     name: str
     code: str
+    staff_ids: list[int] = []
     faculty_name: str | None = None
-    faculty_email: EmailStr
-    faculty_password: str
+    faculty_email: EmailStr | None = None
+    faculty_password: str | None = None
 
 
 class DepartmentUpdate(BaseModel):
     name: str | None = None
     code: str | None = None
+    staff_ids: list[int] | None = None
 
 
 class DepartmentOut(BaseModel):
@@ -119,6 +128,7 @@ class DepartmentOut(BaseModel):
     subject_count: int = 0
     faculty_count: int = 0
     lead_faculty_email: str | None = None
+    assigned_staff_ids: list[int] = []
 
 
 class BillingSnapshotOut(BaseModel):
@@ -151,6 +161,7 @@ class UserAdminOut(BaseModel):
     name: str
     role: str
     status: str
+    department_id: int | None = None
     department_name: str | None = None
     created_at: datetime
 

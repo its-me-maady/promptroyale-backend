@@ -1,12 +1,18 @@
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import CurrentUser, get_current_user, get_password_hash
 from app.database import get_db
-from app.models import Subject, SubjectMembership, User
+from app.models import (
+    BattleUsageCounter,
+    Subject,
+    SubjectMembership,
+    UsageRecord,
+    User,
+)
 from app.schemas import (
     StudentCreate,
     StudentDetailOut,
@@ -252,3 +258,35 @@ async def unenroll_student_from_subject(
 
     await db.commit()
     return {"message": f"Student unenrolled from subject {subject_id}", "student_id": student_id, "subject_id": subject_id}
+
+
+@router.delete("/{student_id}")
+async def delete_student(
+    student_id: int,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    enforce_staff(current_user)
+
+    student = await db.get(User, student_id)
+    if not student or student.college_id != current_user.college_id or student.role != "student":
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if (
+        current_user.role == "department_user"
+        and current_user.department_id
+        and student.department_id != current_user.department_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Cannot delete students outside your department."
+        )
+
+    # Clean up dependent records
+    await db.execute(delete(BattleUsageCounter).where(BattleUsageCounter.student_id == student.id))
+    await db.execute(delete(UsageRecord).where(UsageRecord.user_id == student.id))
+    await db.execute(delete(SubjectMembership).where(SubjectMembership.student_id == student.id))
+    await db.delete(student)
+    await db.commit()
+
+    return {"message": f"Student {student.name} deleted successfully", "student_id": student_id}

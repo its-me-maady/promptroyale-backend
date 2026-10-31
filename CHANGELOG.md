@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [#9] Added dedicated staff management endpoints (`GET /api/admin/staff`, `POST /api/admin/staff`, `DELETE /api/admin/staff/{id}`) for College Administrators (closes #9).
+- [#9] Supported multi-select staff member assignment in department creation (`POST /api/admin/departments`) and department editing (`PUT /api/admin/departments/{id}`).
+- [#9] Implemented student deletion endpoint (`DELETE /api/students/{id}`) scoped for department faculty and administrators, cleaning up dependent usage counters, usage records, and subject memberships.
+- [#9] Implemented general institutional user deletion endpoint (`DELETE /api/admin/users/{id}`) for College Administrators.
 - [#7] Implemented Department Edit endpoint (`PUT /api/admin/departments/{id}`) allowing College Administrators to update department code and name (closes #7).
 - [#7] Upgraded Department Provisioning endpoint (`POST /api/admin/departments`) to require faculty email and password, atomically creating both the Department and its primary `department_user` (Faculty) account.
 - [#7] Added `lead_faculty_email` to `DepartmentOut` schema and department directory listings.
