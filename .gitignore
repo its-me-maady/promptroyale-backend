@@ -16,6 +16,9 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+data/
+*.db
+
 
 # Git Worktrees
 .worktrees/
