@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import auth, subjects
+from app.routers import auth, chat, quiz, subjects
 from app.seed import seed_vaigai_college
 
 
@@ -32,6 +32,8 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(subjects.router)
+app.include_router(chat.router)
+app.include_router(quiz.router)
 
 @app.get("/api/health")
 async def health_check():
