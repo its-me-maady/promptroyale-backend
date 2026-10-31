@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import admin, auth, chat, quiz, students, subjects
+from app.routers import admin, auth, chat, credentials, quiz, students, subjects
 from app.seed import seed_vaigai_college
 
 
@@ -36,6 +36,7 @@ app.include_router(students.router)
 app.include_router(subjects.router)
 app.include_router(chat.router)
 app.include_router(quiz.router)
+app.include_router(credentials.router)
 
 @app.get("/api/health")
 async def health_check():

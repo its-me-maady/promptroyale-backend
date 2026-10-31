@@ -246,3 +246,22 @@ class QuizSubmitResponse(BaseModel):
     accuracy_percentage: float
     time_taken_seconds: int
     review: list[QuizQuestionReview]
+
+
+# AI Provider BYOK Credential Schemas (SRS Section 4.7)
+class AIProviderCredentialCreate(BaseModel):
+    provider: str  # 'gemini', 'openai', 'anthropic', 'deepseek', 'openrouter'
+    api_key: str
+    is_default: bool = False
+
+
+class AIProviderCredentialOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    student_id: int
+    provider: str
+    masked_key: str
+    status: str  # 'active', 'revoked'
+    is_default: bool
+    created_at: datetime
