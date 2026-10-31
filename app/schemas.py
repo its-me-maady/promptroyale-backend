@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 
@@ -24,6 +26,7 @@ class LoginResponse(BaseModel):
     user: UserOut
 
 
+# Subject Schemas
 class SubjectOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -33,8 +36,121 @@ class SubjectOut(BaseModel):
     description: str | None = ""
     department_id: int
     document_count: int | None = 0
+    enrolled_student_count: int | None = 0
 
 
+class SubjectCreate(BaseModel):
+    code: str
+    name: str
+    description: str = ""
+    department_id: int | None = None
+
+
+class SubjectUpdate(BaseModel):
+    code: str | None = None
+    name: str | None = None
+    description: str | None = None
+
+
+# Student Management Schemas
+class StudentEnrolledSubject(BaseModel):
+    id: int
+    code: str
+    name: str
+
+
+class StudentDetailOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    name: str
+    role: str
+    status: str
+    enrolled_subjects: list[int] = []
+    enrolled_subject_details: list[StudentEnrolledSubject] = []
+
+
+class StudentCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    initial_subject_ids: list[int] = []
+
+
+class StudentUpdate(BaseModel):
+    name: str | None = None
+    status: str | None = None  # 'active', 'suspended', 'deactivated'
+
+
+class SubjectEnrollmentRequest(BaseModel):
+    subject_id: int
+
+
+class SubjectStudentsOut(BaseModel):
+    subject_id: int
+    subject_code: str
+    subject_name: str
+    enrolled: list[StudentDetailOut]
+    available_students: list[StudentDetailOut]
+
+
+# Admin Governance Schemas
+class DepartmentCreate(BaseModel):
+    name: str
+    code: str
+
+
+class DepartmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    college_id: int
+    name: str
+    code: str
+    subject_count: int = 0
+    faculty_count: int = 0
+
+
+class BillingSnapshotOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    snapshot_date: str
+    active_student_count: int
+    monthly_token_quota: int
+    tokens_consumed: int
+    tier: str
+
+
+class AdminOverviewOut(BaseModel):
+    college_id: int
+    college_name: str
+    college_domain: str
+    department_count: int
+    subject_count: int
+    student_count: int
+    faculty_count: int
+    billing_snapshot: BillingSnapshotOut
+    ai_status: str = "Connected (Gemini 1.5 Flash)"
+
+
+class UserAdminOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    name: str
+    role: str
+    status: str
+    department_name: str | None = None
+    created_at: datetime
+
+
+class UserStatusUpdate(BaseModel):
+    status: str  # 'active', 'suspended', 'deactivated'
+
+
+# Document Schemas
 class DocumentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -45,6 +161,7 @@ class DocumentOut(BaseModel):
     processing_status: str
 
 
+# Chat Schemas
 class ChatQueryRequest(BaseModel):
     subject_id: int
     question: str
@@ -105,7 +222,7 @@ class QuizQuestionReview(BaseModel):
 
 class QuizSubmitResponse(BaseModel):
     score: int
-    total: int = 10
+    total: int
     accuracy_percentage: float
     time_taken_seconds: int
     review: list[QuizQuestionReview]

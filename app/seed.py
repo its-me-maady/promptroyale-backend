@@ -1,8 +1,12 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 
 from app.core.security import get_password_hash
 from app.database import AsyncSessionLocal
 from app.models import (
+    AIProviderCredential,
+    BillingSnapshot,
     College,
     Department,
     Document,
@@ -26,7 +30,8 @@ async def seed_vaigai_college():
         # 1. College
         college = College(
             name="Vaigai College of Engineering",
-            domain="vaigai.edu"
+            domain="vaigai.edu",
+            service_tier="Academic Enterprise"
         )
         session.add(college)
         await session.flush()
@@ -65,7 +70,9 @@ async def seed_vaigai_college():
             email="adhithiyan@vaigai.edu",
             name="Adhithiyan",
             hashed_password=password_hash,
-            role="student"
+            role="student",
+            status="active",
+            is_active=True
         )
 
         faculty_user = User(
@@ -74,7 +81,9 @@ async def seed_vaigai_college():
             email="faculty.cse@vaigai.edu",
             name="Dr. K. Ramanathan",
             hashed_password=password_hash,
-            role="department_user"
+            role="department_user",
+            status="active",
+            is_active=True
         )
 
         admin_user = User(
@@ -83,7 +92,9 @@ async def seed_vaigai_college():
             email="admin@vaigai.edu",
             name="Principal Office",
             hashed_password=password_hash,
-            role="college_admin"
+            role="college_admin",
+            status="active",
+            is_active=True
         )
 
         session.add_all([student_adhithiyan, faculty_user, admin_user])
@@ -93,11 +104,33 @@ async def seed_vaigai_college():
         membership = SubjectMembership(
             student_id=student_adhithiyan.id,
             subject_id=sub1.id,
-            is_active=True
+            status="active",
+            is_active=True,
+            added_at=datetime.now(UTC)
         )
         session.add(membership)
 
-        # 6. Pre-chunked Documents for CS101
+        # 6. Billing Snapshot
+        billing = BillingSnapshot(
+            college_id=college.id,
+            snapshot_date=datetime.now(UTC).strftime("%Y-%m"),
+            active_student_count=1,
+            monthly_token_quota=1_000_000,
+            tokens_consumed=142_500,
+            tier="Academic Enterprise"
+        )
+        session.add(billing)
+
+        # 7. AI Provider Credential
+        cred = AIProviderCredential(
+            student_id=student_adhithiyan.id,
+            provider="gemini",
+            encrypted_key="enc_gemini_token_placeholder",
+            status="active"
+        )
+        session.add(cred)
+
+        # 8. Pre-chunked Documents for CS101
         doc1 = Document(
             subject_id=sub1.id,
             title="Lecture 3 — Tree Traversals & Breadth-First Search",
@@ -139,7 +172,7 @@ async def seed_vaigai_college():
         ]
         session.add_all(chunks_cs101)
 
-        # 7. Document for CS202
+        # 9. Document for CS202
         doc2 = Document(
             subject_id=sub2.id,
             title="Lecture 1 — Relational Algebra Fundamentals",
@@ -161,4 +194,4 @@ async def seed_vaigai_college():
         session.add_all(chunks_cs202)
 
         await session.commit()
-        print("--> Vaigai College successfully seeded with students, subjects, and vetted syllabus!")
+        print("--> Vaigai College successfully seeded with students, subjects, billing, and vetted syllabus!")
